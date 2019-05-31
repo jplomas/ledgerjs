@@ -1,20 +1,21 @@
 import { listen } from "@ledgerhq/logs";
-import testBtc from "./testBtc";
-import testBtc2 from "./testBtc2";
-import testBtc3 from "./testBtc3";
-import testBtc4 from "./testBtc4";
-import testBtcSegMulti from "./testBtcSegMulti";
-import testBtcSignP2SHSeg from "./testBtcSignP2SHSeg";
-import testEth from "./testEth";
-import testEth2 from "./testEth2";
-import testEth3 from "./testEth3";
-import testEth4 from "./testEth4";
-import testXrp from "./testXrp";
-import testXrp2 from "./testXrp2";
-import testXrp3 from "./testXrp3";
-import testStr from "./testStr";
-import testStr2 from "./testStr2";
-import testStr3 from "./testStr3";
+// import testBtc from "./testBtc";
+// import testBtc2 from "./testBtc2";
+// import testBtc3 from "./testBtc3";
+// import testBtc4 from "./testBtc4";
+// import testBtcSegMulti from "./testBtcSegMulti";
+// import testBtcSignP2SHSeg from "./testBtcSignP2SHSeg";
+// import testEth from "./testEth";
+// import testEth2 from "./testEth2";
+// import testEth3 from "./testEth3";
+// import testEth4 from "./testEth4";
+// import testXrp from "./testXrp";
+// import testXrp2 from "./testXrp2";
+// import testXrp3 from "./testXrp3";
+// import testStr from "./testStr";
+// import testStr2 from "./testStr2";
+// import testStr3 from "./testStr3";
+import testQrl from "./testQrl";
 
 listen(e => {
   console.log(`${e.type}: ${e.message}`);
@@ -29,26 +30,28 @@ function expectAppContext(appName) {
 }
 
 var tests = [
-  expectAppContext("Bitcoin (btc)"),
-  { name: "testBtc", run: testBtc },
-  { name: "testBtc2", run: testBtc2 },
-  { name: "testBtc3", run: testBtc3 },
-  { name: "testBtc4", run: testBtc4 },
-  { name: "testBtcSegMulti", run: testBtcSegMulti },
-  { name: "testBtcSignP2SHSeg", run: testBtcSignP2SHSeg },
-  expectAppContext("Ethereum (eth)"),
-  { name: "testEth", run: testEth },
-  { name: "testEth2", run: testEth2 },
-  { name: "testEth3", run: testEth3 },
-  { name: "testEth4", run: testEth4 },
-  expectAppContext("Ripple (xrp)"),
-  { name: "testXrp", run: testXrp },
-  { name: "testXrp2", run: testXrp2 },
-  { name: "testXrp3", run: testXrp3 },
-  expectAppContext("Stellar"),
-  { name: "testStr", run: testStr },
-  { name: "testStr2", run: testStr2 },
-  { name: "testStr3", run: testStr3 }
+  expectAppContext("Quantum Resistant Ledger (qrl)"),
+  { name: "testQrl", run: testQrl },
+  // expectAppContext("Bitcoin (btc)"),
+  // { name: "testBtc", run: testBtc },
+  // { name: "testBtc2", run: testBtc2 },
+  // { name: "testBtc3", run: testBtc3 },
+  // { name: "testBtc4", run: testBtc4 },
+  // { name: "testBtcSegMulti", run: testBtcSegMulti },
+  // { name: "testBtcSignP2SHSeg", run: testBtcSignP2SHSeg },
+  // expectAppContext("Ethereum (eth)"),
+  // { name: "testEth", run: testEth },
+  // { name: "testEth2", run: testEth2 },
+  // { name: "testEth3", run: testEth3 },
+  // { name: "testEth4", run: testEth4 },
+  // expectAppContext("Ripple (xrp)"),
+  // { name: "testXrp", run: testXrp },
+  // { name: "testXrp2", run: testXrp2 },
+  // { name: "testXrp3", run: testXrp3 },
+  // expectAppContext("Stellar"),
+  // { name: "testStr", run: testStr },
+  // { name: "testStr2", run: testStr2 },
+  // { name: "testStr3", run: testStr3 }
 ];
 
 const defaultWaitForAppSwitch = step =>
