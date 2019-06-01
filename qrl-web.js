@@ -16,3 +16,5 @@ window.TransportWebUSB = TransportWebUSB;
 window.Qrl = Qrl;
 
 window.transports = transports;
+
+window.device = device;
