@@ -17,44 +17,140 @@
 //@flow
 
 import type Transport from "@ledgerhq/hw-transport";
-import {
-  splitPath,
-  foreach,
-  encodeEd25519PublicKey,
-  verifyEd25519Signature,
-  checkStellarBip32Path,
-  hash
-} from "./utils";
+// import {
+//   splitPath,
+//   foreach,
+//   encodeEd25519PublicKey,
+//   verifyEd25519Signature,
+//   checkStellarBip32Path,
+//   hash
+// } from "./utils";
 
+/* Constants */
 const CLA = 0x77;
-const INS_GET_PK = 0x02;
-const INS_SIGN_TX = 0x04;
-const INS_GET_CONF = 0x00;
-const INS_SIGN_TX_HASH = 0x08;
-const INS_KEEP_ALIVE = 0x10;
 
-const APDU_MAX_SIZE = 150;
-const P1_FIRST_APDU = 0x00;
-const P1_MORE_APDU = 0x80;
-const P2_LAST_APDU = 0x00;
-const P2_MORE_APDU = 0x80;
+// Instructions
+const INS_VERSION = 0x00;
+const INS_GETSTATE = 0x01;
+const INS_PUBLIC_KEY = 0x03;
+const INS_SIGN = 0x04;
+const INS_SIGN_NEXT = 0x05;
+const INS_SETIDX = 0x06;
+const INS_VIEW_ADDRESS = 0x07;
 
-const SW_OK = 0x9000;
-const SW_CANCEL = 0x6985;
-const SW_UNKNOWN_OP = 0x6c24;
-const SW_MULTI_OP = 0x6c25;
-const SW_NOT_ALLOWED = 0x6c66;
-const SW_UNSUPPORTED = 0x6d00;
-const SW_KEEP_ALIVE = 0x6e02;
+// Test instructions
+/* These instructions are only enabled in test mode */
+const INS_TEST_PK_GEN_1 = 0x80;
+const INS_TEST_PK_GEN_2 = 0x81;
+const INS_TEST_CALC_PK = 0x82;
+const INS_TEST_WRITE_LEAF = 0x83;
+const INS_TEST_READ_LEAF = 0x84;
+const INS_TEST_KEYGEN = 0x85;
+const INS_TEST_DIGEST = 0x86;
+const INS_TEST_SETSTATE = 0x87;
+const INS_TEST_COMM = 0x88;
 
-const TX_MAX_SIZE = 1540;
+// APDU ERRORS
+const APDU_ERROR_CODE_OK = 0x9000;
+
+const QRLTX_TX = 0;
+const QRLTX_TXTOKEN = 1;
+const QRLTX_SLAVE = 2;
+const QRLTX_MESSAGE = 3;
+
+// Based on https=//github.com/ZondaX/ledger-qrl-app/src/lib/qrl_types.
+const P_TX_ADDRESS_SIZE = 39;
+const P_TX_MAX_MESSAGE_SIZE = 80;
+
+const P_TX_TYPE = 0;
+const P_TX_NUM_DEST = 1;
+const P_TX_SRC_ADDR = 2;
+const P_TX_SRC_FEE = 41;
+const P_TX_DEST = 49;
+
+function serialize(CLA, INS, p1 = 0, p2 = 0, data = null) {
+    var size = 5;
+    if (data != null) {
+        if (data.length > 255) {
+            throw new Error('maximum data size = 255');
+        }
+        size += data.length
+    }
+
+    var buffer = Buffer.alloc(size);
+    buffer[0] = CLA;
+    buffer[1] = INS;
+    buffer[2] = p1;
+    buffer[3] = p2;
+    buffer[4] = 0;
+
+    if (data != null) {
+        buffer[4] = data.length;
+        buffer.set(data, 5);
+    }
+
+    return buffer;
+}
+
+function concatenateTypedArrays (resultConstructor, ...arrays) {
+    let totalLength = 0;
+    for (let arr of arrays) {
+      totalLength += arr.length;
+    }
+    let result = new resultConstructor(totalLength);
+    let offset = 0;
+    for (let arr of arrays) {
+      result.set(arr, offset);
+      offset += arr.length;
+    }
+    return result;
+}
+
+function errorMessage(error_code) {
+    switch (error_code) {
+        case 14:
+            return "Timeout";
+        case 0x9000:
+            return "No errors";
+        case 0x9001:
+            return "Device is busy";
+        case 0x6400:
+            return "Execution Error";
+        case 0x6700:
+            return "Wrong Length";
+        case 0x6982:
+            return "Empty Buffer";
+        case 0x6983:
+            return "Output buffer too small";
+        case 0x6984:
+            return "Data is invalid";
+        case 0x6985:
+            return "Conditions not satisfied";
+        case 0x6986:
+            return "Command not allowed";
+        case 0x6A80:
+            return "Bad key handle";
+        case 0x6B00:
+            return "Invalid P1/P2";
+        case 0x6D00:
+            return "Instruction not supported";
+        case 0x6E00:
+            return "CLA not supported";
+        case 0x6F00:
+            return "Unknown error";
+        case 0x6F01:
+            return "Sign/verify error";
+        default:
+            return "Unknown error code";
+    }
+}
 
 /**
- * Stellar API
+ * Quantum Resistant Ledger API
  *
  * @example
- * import Str from "@ledgerhq/hw-app-str";
- * const str = new Str(transport)
+ * import Qrl from "@ledgerhq/hw-app-qrl";
+ * const str = new Qrl(transport)
  */
 export default class Qrl {
   transport: Transport<*>;
@@ -63,15 +159,15 @@ export default class Qrl {
     this.transport = transport;
     transport.decorateAppAPIMethods(
       this,
-      ["getAppConfiguration", "getPublicKey", "signTransaction", "signHash"],
+      ["get_version", "get_state"],
       scrambleKey
     );
   }
 
-  getAppConfiguration(): Promise<{
+  get_version(): Promise<{
     version: string
   }> {
-    return this.transport.send(CLA, INS_GET_CONF, 0x00, 0x00).then(response => {
+    return this.transport.send(CLA, INS_VERSION, 0x00, 0x00).then(response => {
       let version = "" + response[1] + "." + response[2] + "." + response[3];
       return {
         version: version
@@ -79,234 +175,25 @@ export default class Qrl {
     });
   }
 
-  /**
-   * get Stellar public key for a given BIP 32 path.
-   * @param path a path in BIP 32 format
-   * @option boolValidate optionally enable key pair validation
-   * @option boolDisplay optionally enable or not the display
-   * @return an object with the publicKey (using XLM public key format) and
-   * the raw ed25519 public key.
-   * @example
-   * str.getPublicKey("44'/148'/0'").then(o => o.publicKey)
-   */
-  getPublicKey(
-    path: string,
-    boolValidate?: boolean,
-    boolDisplay?: boolean
-  ): Promise<{ publicKey: string, raw: Buffer }> {
-    checkStellarBip32Path(path);
-
-    let apdus = [];
-    let response;
-
-    let pathElts = splitPath(path);
-    let buffer = new Buffer(1 + pathElts.length * 4);
-    buffer[0] = pathElts.length;
-    pathElts.forEach((element, index) => {
-      buffer.writeUInt32BE(element, 1 + 4 * index);
-    });
-    let verifyMsg = Buffer.from("via lumina", "ascii");
-    apdus.push(Buffer.concat([buffer, verifyMsg]));
-    let keepAlive = false;
-    return foreach(apdus, data =>
-      this.transport
-        .send(
-          CLA,
-          keepAlive ? INS_KEEP_ALIVE : INS_GET_PK,
-          boolValidate ? 0x01 : 0x00,
-          boolDisplay ? 0x01 : 0x00,
-          data,
-          [SW_OK, SW_KEEP_ALIVE]
-        )
-        .then(apduResponse => {
-          let status = Buffer.from(
-            apduResponse.slice(apduResponse.length - 2)
-          ).readUInt16BE(0);
-          if (status === SW_KEEP_ALIVE) {
-            keepAlive = true;
-            apdus.push(Buffer.alloc(0));
-          }
-          response = apduResponse;
-        })
-    ).then(() => {
-      // response = Buffer.from(response, 'hex');
-      let offset = 0;
-      let rawPublicKey = response.slice(offset, offset + 32);
-      offset += 32;
-      let publicKey = encodeEd25519PublicKey(rawPublicKey);
-      if (boolValidate) {
-        let signature = response.slice(offset, offset + 64);
-        if (!verifyEd25519Signature(verifyMsg, signature, rawPublicKey)) {
-          throw new Error(
-            "Bad signature. Keypair is invalid. Please report this."
-          );
-        }
-      }
-      return {
-        publicKey: publicKey,
-        raw: rawPublicKey
-      };
-    });
+  get_state(): Promise<{
+    result: object
+  }> {
+    return this.transport.send(
+      CLA, INS_GETSTATE, 0, 0
+        ).then(
+          function (apduResponse) {
+            // console.log(apduResponse);
+            var result = {};
+            result["state"] = apduResponse[0]; // 0 - Not ready, 1 - generating keys, 2 = ready
+            result["xmss_index"] = apduResponse[2] + apduResponse[1] * 256;
+            return result;
+           },
+           // failed to get state
+           function (response) {
+             // Error handling
+             console.log("Error: ", response);
+             return response;
+        });
   }
 
-  /**
-   * sign a Stellar transaction.
-   * @param path a path in BIP 32 format
-   * @param transaction signature base of the transaction to sign
-   * @return an object with the signature and the status
-   * @example
-   * str.signTransaction("44'/148'/0'", signatureBase).then(o => o.signature)
-   */
-  signTransaction(
-    path: string,
-    transaction: Buffer
-  ): Promise<{ signature: Buffer }> {
-    checkStellarBip32Path(path);
-
-    if (transaction.length > TX_MAX_SIZE) {
-      throw new Error(
-        "Transaction too large: max = " +
-          TX_MAX_SIZE +
-          "; actual = " +
-          transaction.length
-      );
-    }
-
-    let apdus = [];
-    let response;
-
-    let pathElts = splitPath(path);
-    let bufferSize = 1 + pathElts.length * 4;
-    let buffer = Buffer.alloc(bufferSize);
-    buffer[0] = pathElts.length;
-    pathElts.forEach(function(element, index) {
-      buffer.writeUInt32BE(element, 1 + 4 * index);
-    });
-    let chunkSize = APDU_MAX_SIZE - bufferSize;
-    if (transaction.length <= chunkSize) {
-      // it fits in a single apdu
-      apdus.push(Buffer.concat([buffer, transaction]));
-    } else {
-      // we need to send multiple apdus to transmit the entire transaction
-      let chunk = Buffer.alloc(chunkSize);
-      let offset = 0;
-      transaction.copy(chunk, 0, offset, chunkSize);
-      apdus.push(Buffer.concat([buffer, chunk]));
-      offset += chunkSize;
-      while (offset < transaction.length) {
-        let remaining = transaction.length - offset;
-        chunkSize = remaining < APDU_MAX_SIZE ? remaining : APDU_MAX_SIZE;
-        chunk = Buffer.alloc(chunkSize);
-        transaction.copy(chunk, 0, offset, offset + chunkSize);
-        offset += chunkSize;
-        apdus.push(chunk);
-      }
-    }
-    let keepAlive = false;
-    return foreach(apdus, (data, i) =>
-      this.transport
-        .send(
-          CLA,
-          keepAlive ? INS_KEEP_ALIVE : INS_SIGN_TX,
-          i === 0 ? P1_FIRST_APDU : P1_MORE_APDU,
-          i === apdus.length - 1 ? P2_LAST_APDU : P2_MORE_APDU,
-          data,
-          [SW_OK, SW_CANCEL, SW_UNKNOWN_OP, SW_MULTI_OP, SW_KEEP_ALIVE]
-        )
-        .then(apduResponse => {
-          let status = Buffer.from(
-            apduResponse.slice(apduResponse.length - 2)
-          ).readUInt16BE(0);
-          if (status === SW_KEEP_ALIVE) {
-            keepAlive = true;
-            apdus.push(Buffer.alloc(0));
-          }
-          response = apduResponse;
-        })
-    ).then(() => {
-      let status = Buffer.from(
-        response.slice(response.length - 2)
-      ).readUInt16BE(0);
-      if (status === SW_OK) {
-        let signature = Buffer.from(response.slice(0, response.length - 2));
-        return {
-          signature: signature
-        };
-      } else if (status === SW_UNKNOWN_OP) {
-        // pre-v2 app version: fall back on hash signing
-        return this.signHash_private(path, hash(transaction));
-      } else if (status === SW_MULTI_OP) {
-        // multi-operation transaction: attempt hash signing
-        return this.signHash_private(path, hash(transaction));
-      } else {
-        throw new Error("Transaction approval request was rejected");
-      }
-    });
-  }
-
-  /**
-   * sign a Stellar transaction hash.
-   * @param path a path in BIP 32 format
-   * @param hash hash of the transaction to sign
-   * @return an object with the signature
-   * @example
-   * str.signHash("44'/148'/0'", hash).then(o => o.signature)
-   */
-  signHash(path: string, hash: Buffer): Promise<{ signature: Buffer }> {
-    checkStellarBip32Path(path);
-    return this.signHash_private(path, hash);
-  }
-
-  signHash_private(path: string, hash: Buffer): Promise<{ signature: Buffer }> {
-    let apdus = [];
-    let response;
-
-    let pathElts = splitPath(path);
-    let buffer = Buffer.alloc(1 + pathElts.length * 4);
-    buffer[0] = pathElts.length;
-    pathElts.forEach(function(element, index) {
-      buffer.writeUInt32BE(element, 1 + 4 * index);
-    });
-    apdus.push(Buffer.concat([buffer, hash]));
-    let keepAlive = false;
-    return foreach(apdus, data =>
-      this.transport
-        .send(
-          CLA,
-          keepAlive ? INS_KEEP_ALIVE : INS_SIGN_TX_HASH,
-          0x00,
-          0x00,
-          data,
-          [SW_OK, SW_CANCEL, SW_NOT_ALLOWED, SW_UNSUPPORTED, SW_KEEP_ALIVE]
-        )
-        .then(apduResponse => {
-          let status = Buffer.from(
-            apduResponse.slice(apduResponse.length - 2)
-          ).readUInt16BE(0);
-          if (status === SW_KEEP_ALIVE) {
-            keepAlive = true;
-            apdus.push(Buffer.alloc(0));
-          }
-          response = apduResponse;
-        })
-    ).then(() => {
-      let status = Buffer.from(
-        response.slice(response.length - 2)
-      ).readUInt16BE(0);
-      if (status === SW_OK) {
-        let signature = Buffer.from(response.slice(0, response.length - 2));
-        return {
-          signature: signature
-        };
-      } else if (status === SW_CANCEL) {
-        throw new Error("Transaction approval request was rejected");
-      } else if (status === SW_UNSUPPORTED) {
-        throw new Error("Hash signing is not supported");
-      } else {
-        throw new Error(
-          "Hash signing not allowed. Have you enabled it in the app settings?"
-        );
-      }
-    });
-  }
 }

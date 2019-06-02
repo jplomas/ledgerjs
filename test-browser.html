@@ -5,15 +5,11 @@
 </head>
 <body>
   <h1>QRL <-> LedgerJS interface diagnostics</h1>
-  <h4>1. Ensure Ledger plugged in, unlocked and QRL app open</h4>
-  <button class="getVersion">Get Version</button>
+  <h4>Ensure Ledger plugged in, unlocked and QRL app open</h4>
+  <p><button class="getVersion">Get Version</button></p>
+  <p><button class="getState">Get State</button></p>
 <script>
 /* eslint-disable */
-
-async function getConfig(qrl) {
-  var r = await qrl.getAppConfiguration();
-  return r
-}
 
 async function getUSBDevices() {
   var d = await navigator.usb.getDevices();
@@ -35,7 +31,7 @@ async function checkSupported() {
   console.log('webusb support: ' + webusb);
 }
 
-async function getVersion() {
+async function createTransport() {
   var transport = null;
   if (checkWebUSB()) {
     transport = await transports[1].clazz.create()
@@ -43,8 +39,25 @@ async function getVersion() {
     transport = await transports[0].clazz.create()
   }
   var qrl = await new Qrl(transport);
-  await getConfig(qrl).then(function(r) {
+  return qrl
+}
+
+async function getVersion() {
+  var qrl = await createTransport();
+  await qrl.get_version().then(function(r) {
     console.log('Success:', r)
+  }).catch(function(e) {
+    console.log('Error getting version: ', e)
+    if (e.statusCode === 28160) {
+      console.log('Ledger is ready but QRL app not open')
+    }
+  }); 
+}
+
+async function getState() {
+  var qrl = await createTransport();
+  await qrl.get_state().then(function(result) {
+    console.log(result)
   }).catch(function(e) {
     console.log('Error getting version: ', e)
     if (e.statusCode === 28160) {
@@ -57,6 +70,9 @@ $(document).ready(function() {
   checkSupported();
   $('.getVersion').click(function() {
     getVersion();
+  });
+  $('.getState').click(function() {
+    getState();
   });
 });
 </script>
