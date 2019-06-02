@@ -203,10 +203,10 @@ export default class Qrl {
       result["error_message"] = "Data is invalid";
       return result;
     }
-    const idxBuffer = Buffer.alloc(6 * 4);
-    idxBuffer.writeUInt32BE(idx, 5 * 4);
+    const idxBuffer = Buffer.alloc(1);
+    idxBuffer.writeUInt8(idx);
     return this.transport.send(
-      CLA, INS_SETIDX, idxBuffer
+      CLA, INS_SETIDX, 0, 0, idxBuffer
     ).then(
       apduResponse => {
         return apduResponse;

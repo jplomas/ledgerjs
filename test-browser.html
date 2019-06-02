@@ -116,7 +116,7 @@ async function setOTS(idx) {
   var qrl = await createTransport();
   await qrl.setIdx(idx).then(function(result) {
     if (!ledgerReturnedError(result)) {
-      console.log('Success: address displayed on device', result);
+      console.log('Success: set OTS key on device to ', idx);
     } else {
       console.log('Fail: ', result);
     }
