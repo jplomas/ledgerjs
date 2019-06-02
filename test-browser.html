@@ -9,6 +9,9 @@
   <p><button class="getVersion">Get Version</button></p>
   <p><button class="getState">Get State</button></p>
   <p><button class="getPublicKey">Get Public Key</button></p>
+  <p><button class="viewAddress">View Address on Device</button></p>
+  <p><button class="OTS0">Set OTS 0</button></p>
+  <p><button class="OTS100">Set OTS 100</button></p>
 <script>
 /* eslint-disable */
 
@@ -96,6 +99,32 @@ async function getPublicKey() {
   }); 
 }
 
+async function viewAddress() {
+  var qrl = await createTransport();
+  await qrl.viewAddress().then(function(result) {
+    if (!ledgerReturnedError(result)) {
+      console.log('Success: address displayed on device');
+    } else {
+      console.log('Fail: ', result);
+    }
+  }).catch(function(e) {
+    console.log('Error showing address: ', e);
+  }); 
+}
+
+async function setOTS(idx) {
+  var qrl = await createTransport();
+  await qrl.setIdx(idx).then(function(result) {
+    if (!ledgerReturnedError(result)) {
+      console.log('Success: address displayed on device', result);
+    } else {
+      console.log('Fail: ', result);
+    }
+  }).catch(function(e) {
+    console.log('Error showing address: ', e);
+  }); 
+}
+
 $(document).ready(function() {
   checkSupported();
   $('.getVersion').click(function() {
@@ -106,6 +135,15 @@ $(document).ready(function() {
   });
   $('.getPublicKey').click(function() {
     getPublicKey();
+  });
+  $('.viewAddress').click(function() {
+    viewAddress();
+  });
+  $('.OTS0').click(function() {
+    setOTS(0);
+  });
+  $('.OTS100').click(function() {
+    setOTS(100);
   });
 });
 </script>

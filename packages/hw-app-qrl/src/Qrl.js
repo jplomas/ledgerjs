@@ -128,7 +128,7 @@ export default class Qrl {
     this.transport = transport;
     transport.decorateAppAPIMethods(
       this,
-      ["get_version", "get_state"],
+      ["get_version", "get_state", "publickey", "viewAddress", "setIdx"],
       scrambleKey
     );
   }
@@ -179,6 +179,40 @@ export default class Qrl {
           },
           response => errorHandling(response)
           );
-  };
+  }
+
+  viewAddress(): Promise<{
+    result: object
+  }> {
+    return this.transport.send(
+      CLA, INS_VIEW_ADDRESS, 0, 0
+    ).then(
+      apduResponse => {
+        return apduResponse;
+      },
+      response => errorHandling(response)
+    );
+  }
+
+  setIdx(idx: number): Promise<{
+    result: object
+  }> {
+    if (idx < 0 || idx > 255) {
+      let result = {};
+      result["return_code"] = 0x6984;
+      result["error_message"] = "Data is invalid";
+      return result;
+    }
+    const idxBuffer = Buffer.alloc(6 * 4);
+    idxBuffer.writeUInt32BE(idx, 5 * 4);
+    return this.transport.send(
+      CLA, INS_SETIDX, idxBuffer
+    ).then(
+      apduResponse => {
+        return apduResponse;
+      },
+      response => errorHandling(response)
+    );
+  }
 
 }
