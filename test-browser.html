@@ -5,13 +5,8 @@
 </head>
 <body>
   <h1>QRL <-> LedgerJS interface diagnostics</h1>
-  <h4>1. Ensure Ledger plugged in and unlocked</h4>
-  <h4>2. Pair WebUSB</h4>
-  <button class="pairWebUSB">Pair WebUSB</button>
-  <p>Ensure QRL app open</p>
-  <button class="getInfo">Get info</button>
-  <h1>U2F</h1>
-  <button class="testU2F">Get version</button>
+  <h4>1. Ensure Ledger plugged in, unlocked and QRL app open</h4>
+  <button class="getVersion">Get Version</button>
 <script>
 /* eslint-disable */
 
@@ -30,7 +25,7 @@ async function checkU2F() {
 }
 
 async function checkWebUSB() {
-  return transports[1].clazz.isSupported()
+  return (!navigator.platform.toLowerCase().includes('win') && (await transports[1].clazz.isSupported()))
 }
 
 async function checkSupported() {
@@ -40,64 +35,28 @@ async function checkSupported() {
   console.log('webusb support: ' + webusb);
 }
 
-async function askUSBPermissions() {
-  return TransportWebUSB.create();
-}
-
-async function pairWebUSB() {
-  var permission = false;
-  try {
-    await askUSBPermissions();
-    permission = true;
-  } catch (e) {
-    var d = await getUSBDevices();
-    if (d.length > 0) {
-      permission = true;
-    }
+async function getVersion() {
+  var transport = null;
+  if (checkWebUSB()) {
+    transport = await transports[1].clazz.create()
+  } else {
+    transport = await transports[0].clazz.create()
   }
-  // if devices available as list here we can assume permission granted
-  console.log('WebUSB pairing permission: '+ permission);
-}
-
-async function setUSBtransport(devices) {
-    var transport = await new TransportWebUSB(devices[0]);
-    return transport
-}
-
-async function openUSBChannel(devices) {
-  return TransportWebUSB.open(devices[0])
-}
-
-async function getInfoWebUSB() {
-  try {
-    var devices = await getUSBDevices();
-  } catch (e) {
-    console.log(e);
-  }
-  // TODO: check it is the correct device
-  var transport = await setUSBtransport(devices);
-  
-  transport = await openUSBChannel(devices);
-
   var qrl = await new Qrl(transport);
-  var r = await getConfig(qrl);
-  console.log(r);
+  await getConfig(qrl).then(function(r) {
+    console.log('Success:', r)
+  }).catch(function(e) {
+    console.log('Error getting version: ', e)
+    if (e.statusCode === 28160) {
+      console.log('Ledger is ready but QRL app not open')
+    }
+  }); 
 }
 
 $(document).ready(function() {
   checkSupported();
-  // U2F
-  $('.testU2F').click(function() {
-    var transport = new transports[0].clazz
-    var qrl = new Qrl(transport);
-    getConfig(qrl).then(function (r) { console.log(r) })
-  });
-  // WebUSB
-  $('.pairWebUSB').click(function() {
-    pairWebUSB();
-  });
-  $('.getInfo').click(function() {
-    getInfoWebUSB();
+  $('.getVersion').click(function() {
+    getVersion();
   });
 });
 </script>
