@@ -8,8 +8,21 @@
   <h4>Ensure Ledger plugged in, unlocked and QRL app open</h4>
   <p><button class="getVersion">Get Version</button></p>
   <p><button class="getState">Get State</button></p>
+  <p><button class="getPublicKey">Get Public Key</button></p>
 <script>
 /* eslint-disable */
+
+function ledgerReturnedError(e) {
+  var r = false;
+  try {
+    if (e.name === 'TransportStatusError') {
+      r = true;
+    }
+  } catch (e) {
+    r = false;
+  }
+  return r;
+}
 
 async function getUSBDevices() {
   var d = await navigator.usb.getDevices();
@@ -34,9 +47,9 @@ async function checkSupported() {
 async function createTransport() {
   var transport = null;
   if (checkWebUSB()) {
-    transport = await transports[1].clazz.create()
+    transport = await transports[1].clazz.create();
   } else {
-    transport = await transports[0].clazz.create()
+    transport = await transports[0].clazz.create();
   }
   var qrl = await new Qrl(transport);
   return qrl
@@ -45,24 +58,41 @@ async function createTransport() {
 async function getVersion() {
   var qrl = await createTransport();
   await qrl.get_version().then(function(r) {
-    console.log('Success:', r)
-  }).catch(function(e) {
-    console.log('Error getting version: ', e)
-    if (e.statusCode === 28160) {
-      console.log('Ledger is ready but QRL app not open')
+    if (!ledgerReturnedError(r)) {
+      console.log('Success: ', r);
+    } else {
+      console.log('Fail: ', r);
     }
+  }).catch(function(e) {
+    console.log('Error getting version: ', e);
   }); 
 }
 
 async function getState() {
   var qrl = await createTransport();
   await qrl.get_state().then(function(result) {
-    console.log(result)
-  }).catch(function(e) {
-    console.log('Error getting version: ', e)
-    if (e.statusCode === 28160) {
-      console.log('Ledger is ready but QRL app not open')
+    if (!ledgerReturnedError(result)) {
+      console.log('Success: ', result);
+    } else {
+      console.log('Fail: ', result);
     }
+  }).catch(function(e) {
+    console.log('Error getting state: ', e);
+  }); 
+}
+
+async function getPublicKey() {
+  var qrl = await createTransport();
+  await qrl.publickey().then(function(result) {
+    if (!ledgerReturnedError(result)) {
+      console.log('Success: ', result);
+      const pkHex = Buffer.from(result.public_key).toString('hex');
+      console.log('Hex version: ', pkHex);
+    } else {
+      console.log('Fail: ', result);
+    }
+  }).catch(function(e) {
+    console.log('Error getting public key: ', e);
   }); 
 }
 
@@ -73,6 +103,9 @@ $(document).ready(function() {
   });
   $('.getState').click(function() {
     getState();
+  });
+  $('.getPublicKey').click(function() {
+    getPublicKey();
   });
 });
 </script>

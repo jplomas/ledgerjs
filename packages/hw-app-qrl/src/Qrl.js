@@ -106,43 +106,12 @@ function concatenateTypedArrays (resultConstructor, ...arrays) {
     return result;
 }
 
-function errorMessage(error_code) {
-    switch (error_code) {
-        case 14:
-            return "Timeout";
-        case 0x9000:
-            return "No errors";
-        case 0x9001:
-            return "Device is busy";
-        case 0x6400:
-            return "Execution Error";
-        case 0x6700:
-            return "Wrong Length";
-        case 0x6982:
-            return "Empty Buffer";
-        case 0x6983:
-            return "Output buffer too small";
-        case 0x6984:
-            return "Data is invalid";
-        case 0x6985:
-            return "Conditions not satisfied";
-        case 0x6986:
-            return "Command not allowed";
-        case 0x6A80:
-            return "Bad key handle";
-        case 0x6B00:
-            return "Invalid P1/P2";
-        case 0x6D00:
-            return "Instruction not supported";
-        case 0x6E00:
-            return "CLA not supported";
-        case 0x6F00:
-            return "Unknown error";
-        case 0x6F01:
-            return "Sign/verify error";
-        default:
-            return "Unknown error code";
-    }
+function errorHandling(response) {
+  let e = response;
+  // backwards compatibility
+  e.return_code = response.statusCode;
+  e.error_message = response.statusText;
+  return e;
 }
 
 /**
@@ -167,12 +136,17 @@ export default class Qrl {
   get_version(): Promise<{
     version: string
   }> {
-    return this.transport.send(CLA, INS_VERSION, 0x00, 0x00).then(response => {
+    return this.transport.send(
+      CLA, INS_VERSION, 0x00, 0x00
+      ).then(function (response) {
       let version = "" + response[1] + "." + response[2] + "." + response[3];
       return {
         version: version
       };
-    });
+    },
+    // failed to get version
+    response => errorHandling(response)
+    );
   }
 
   get_state(): Promise<{
@@ -181,7 +155,7 @@ export default class Qrl {
     return this.transport.send(
       CLA, INS_GETSTATE, 0, 0
         ).then(
-          function (apduResponse) {
+          apduResponse => {
             // console.log(apduResponse);
             var result = {};
             result["state"] = apduResponse[0]; // 0 - Not ready, 1 - generating keys, 2 = ready
@@ -189,11 +163,22 @@ export default class Qrl {
             return result;
            },
            // failed to get state
-           function (response) {
-             // Error handling
-             console.log("Error: ", response);
-             return response;
-        });
+           response => errorHandling(response)
+        );
   }
+
+  publickey(): Promise<{
+    result: object
+  }> {
+    return this.transport.send(
+      CLA, INS_PUBLIC_KEY).then(
+          apduResponse => {
+              var result = {};
+              result["public_key"] = apduResponse.slice(0, apduResponse.length - 2);
+              return result;
+          },
+          response => errorHandling(response)
+          );
+  };
 
 }
