@@ -12,15 +12,51 @@
   <p><button class="viewAddress">View Address on Device</button></p>
   <p><button class="OTS0">Set OTS 0</button></p>
   <p><button class="OTS100">Set OTS 100</button></p>
-  <p><button class="createTx">Create basic Tx & SignSend</button></p>
+  <p><button class="signSend">Create basic Tx & SignSend</button></p>
+  <p><button class="createMsgTx">Create message Tx & SignSend</button></p>
 <script>
 /* eslint-disable */
 
+toBigendianUint64BytesUnsigned = (input, bufferResponse = false) => {
+  if (!Number.isInteger(input)) {
+    input = parseInt(input, 10); // eslint-disable-line
+  }
+
+  const byteArray = [0, 0, 0, 0, 0, 0, 0, 0];
+
+  for (var index = 0; index < byteArray.length; index += 1) {
+    const byte = input & 0xff // eslint-disable-line no-bitwise
+    byteArray[index] = byte
+    input = (input - byte) / 256 // eslint-disable-line
+  };
+
+  byteArray.reverse();
+
+  if (bufferResponse === true) {
+    const result = Buffer.from(byteArray);
+    return result;
+  }
+  const result = new Uint8Array(byteArray);
+  return result;
+}
+
+function getDummyAddr(val) {
+    var tmp = Buffer.alloc(39);
+    for (var i = 0; i < 39; i++) {
+        tmp[i] = val;
+    }
+    return tmp;
+}
+
 function ledgerReturnedError(e) {
   var r = false;
-  if (e === 'DOMException') {
-    // DOMException will be thrown if WebUSB device is unplugged during Ledger UI event
-    r = true;
+  try {
+    if (e instanceof DOMException) {
+      // DOMException will be thrown if WebUSB device is unplugged during Ledger UI event
+      r = true;
+    }
+  } catch (e) {
+    r = false;
   }
   try {
     if (e.name === 'TransportStatusError') {
@@ -147,6 +183,17 @@ async function signSend(message) {
   }); 
 }
 
+async function createMsgTx(source_addr, fee, message) {
+  var qrl = await createTransport();
+  var result = qrl.createMessageTx(source_addr, fee, message);
+  if (result) {
+    console.log('Success creating message Tx: ', result);
+    signSend(result);
+  } else {
+    console.log('Error creating message Tx');
+  };
+}
+
 $(document).ready(function() {
   checkSupported();
   $('.getVersion').click(function() {
@@ -167,11 +214,18 @@ $(document).ready(function() {
   $('.OTS100').click(function() {
     setOTS(100);
   });
-  $('.createTx').click(function() {
+  $('.signSend').click(function() {
     var basic_tx = Buffer.alloc(96);
     basic_tx[0] = 0; // QRLTX_TX;
     basic_tx[1] = 1;
     signSend(basic_tx);
+  });
+  $('.createMsgTx').click(function() {
+    var source_addr = Buffer.from('000400536b8996ccf07999f29b65edd41ed5603b3cd20430b46eefa10ca3e26266792675e8e412', 'hex');
+    var fee = toBigendianUint64BytesUnsigned(10, true)
+    var message = Buffer.alloc(80);
+    message.fill(10);
+    createMsgTx(source_addr, fee, message);
   });
 });
 </script>

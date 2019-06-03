@@ -279,4 +279,36 @@ export default class Qrl {
       return tx;
   };
 
+  createMessageTx(source_address, fee, message): Promise<{
+    result: object
+  }> {
+      // https://github.com/ZondaX/ledger-qrl-app/src/lib/qrl_types.h
+
+      // Verify that sizes are valid
+      if (source_address.length !== P_TX_ADDRESS_SIZE) {
+          throw Error("Source address length invalid");
+      }
+
+      if (fee.length !== 8) {
+          throw Error("fee should be 8 bytes");
+      }
+
+      if (message.length > P_TX_MAX_MESSAGE_SIZE) {
+          throw Error("Message length exceed maximum size");
+      }
+
+      // Define buffer size
+      let messageLength = message.length;
+      let tx = Buffer.alloc(2 + 47 + (messageLength));
+
+      tx[P_TX_TYPE] = QRLTX_MESSAGE;
+      tx[P_TX_NUM_DEST] = messageLength;
+
+      source_address.copy(tx, P_TX_SRC_ADDR);
+      fee.copy(tx, P_TX_SRC_FEE);
+      message.copy(tx, 49);
+
+      return tx;
+  };
+
 }
