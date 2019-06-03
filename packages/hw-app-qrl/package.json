@@ -1,6 +1,6 @@
 {
-  "name": "@ledgerhq/hw-app-qrl",
-  "version": "4.60.3",
+  "name": "@theqrl/hw-app-qrl",
+  "version": "4.60.1",
   "description": "Ledger Hardware Wallet Quantum Resistant Ledger Application API",
   "keywords": [
     "Ledger",
@@ -13,12 +13,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/theqrl/qrl-ledger-js"
+    "url": "https://github.com/theqrl/hw-app-qrl"
   },
   "bugs": {
-    "url": "https://github.com/theqrl/qrl-ledger-js/issues"
+    "url": "https://github.com/theqrl/hw-app-qrl/issues"
   },
-  "homepage": "https://github.com/theqrl/qrl-ledger-js",
+  "homepage": "https://github.com/theqrl/hw-app-qrl",
   "publishConfig": {
     "access": "public"
   },
@@ -31,6 +31,11 @@
   "devDependencies": {
     "flow-bin": "^0.98.1"
   },
+  "files": [
+    "lib/bundle.js",
+    "lib/Qrl.js",
+    "lib/qrl-web.js"
+  ],
   "scripts": {
     "flow": "flow",
     "clean": "bash ../../script/clean.sh",
