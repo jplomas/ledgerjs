@@ -215,4 +215,68 @@ export default class Qrl {
     );
   }
 
+  signSend(message: string): Promise<{
+    result: object
+  }> {
+    return this.transport.send(
+      CLA, INS_SIGN, 0, 0, Buffer.from(message)).then(
+      apduResponse => {
+        return apduResponse;
+      },
+      response => errorHandling(response)
+    );
+  };
+
+  createTx(source_address, fee, dest_addresses, dest_amounts): Promise<{
+    result: object
+  }> {
+      // https://github.com/theqrl/ledger-qrl-app/src/lib/qrl_types.h
+
+      // Verify that sizes are valid
+      if (source_address.length !== P_TX_ADDRESS_SIZE) {
+          throw Error("Source address length invalid");
+      }
+
+      if (fee.length !== 8) {
+          throw Error("fee should be 8 bytes");
+      }
+
+      if (dest_addresses.length !== dest_amounts.length) {
+          throw Error("dest addresses and amount should have the same number of items");
+      }
+
+      if (dest_addresses.length > 3) {
+          throw Error("maximum supported number of destinations is 3");
+      }
+
+      for (let i = 0; i < dest_addresses.length; i++) {
+          if (dest_addresses[i].length !== P_TX_ADDRESS_SIZE) {
+              throw Error("Destination address length invalid");
+          }
+          if (dest_amounts[i].length !== 8) {
+              throw Error("each dest_amount should be 8 bytes");
+          }
+      }
+
+      // Define buffer size
+      var num_dest = dest_addresses.length;
+      let tx = Buffer.alloc(2 + 47 * (1 + num_dest));
+
+      tx[P_TX_TYPE] = QRLTX_TX;
+      tx[P_TX_NUM_DEST] = num_dest;
+
+      source_address.copy(tx, P_TX_SRC_ADDR);
+      fee.copy(tx, P_TX_SRC_FEE);
+
+      let offset = P_TX_DEST;
+      for (let i = 0; i < dest_addresses.length; i++) {
+          dest_addresses[i].copy(tx, offset);
+          offset += P_TX_ADDRESS_SIZE;
+          dest_amounts[i].copy(tx, offset);
+          offset += 8;
+      }
+
+      return tx;
+  };
+
 }

@@ -12,11 +12,16 @@
   <p><button class="viewAddress">View Address on Device</button></p>
   <p><button class="OTS0">Set OTS 0</button></p>
   <p><button class="OTS100">Set OTS 100</button></p>
+  <p><button class="createTx">Create basic Tx & SignSend</button></p>
 <script>
 /* eslint-disable */
 
 function ledgerReturnedError(e) {
   var r = false;
+  if (e === 'DOMException') {
+    // DOMException will be thrown if WebUSB device is unplugged during Ledger UI event
+    r = true;
+  }
   try {
     if (e.name === 'TransportStatusError') {
       r = true;
@@ -121,7 +126,24 @@ async function setOTS(idx) {
       console.log('Fail: ', result);
     }
   }).catch(function(e) {
-    console.log('Error showing address: ', e);
+    console.log('Error setting OTS key: ', e);
+  }); 
+}
+
+async function signSend(message) {
+  var qrl = await createTransport();
+  await qrl.signSend(message).then(function(result) {
+    if (!ledgerReturnedError(result)) {
+      console.log(result);
+      console.log('Success');
+    } else {
+      if (result.statusCode === 27014) {
+        console.log('User rejected transaction');
+      }
+      console.log('Fail: ', result);
+    }
+  }).catch(function(e) {
+    console.log('Error signing: ', e);
   }); 
 }
 
@@ -144,6 +166,12 @@ $(document).ready(function() {
   });
   $('.OTS100').click(function() {
     setOTS(100);
+  });
+  $('.createTx').click(function() {
+    var basic_tx = Buffer.alloc(96);
+    basic_tx[0] = 0; // QRLTX_TX;
+    basic_tx[1] = 1;
+    signSend(basic_tx);
   });
 });
 </script>
