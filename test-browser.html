@@ -59,7 +59,7 @@ function ledgerReturnedError(e) {
     r = false;
   }
   try {
-    if (e.name === 'TransportStatusError') {
+    if (e.name === 'TransportStatusError' || e instanceof TransportStatusError) {
       r = true;
     }
   } catch (e) {
@@ -166,12 +166,29 @@ async function setOTS(idx) {
   }); 
 }
 
-async function signSend(message) {
+async function retrieveSignature(message) {
   var qrl = await createTransport();
-  await qrl.signSend(message).then(function(result) {
+  await qrl.retrieveSignature(message).then(function(result) {
     if (!ledgerReturnedError(result)) {
       console.log(result);
-      console.log('Success');
+      console.log('Success: signed');
+    } else {
+      console.log('Fail: ', result);
+      if (result.statusCode === 27014) {
+        console.log('The user rejected the transaction on the Ledger');
+      }
+    }
+  }).catch(function(e) {
+    console.log('Error during signing on Ledger', e);
+  }); 
+}
+
+async function signSend(message) {
+  var qrl = await createTransport();
+  await qrl.retrieveSignature(message).then(function(result) {
+    if (!ledgerReturnedError(result)) {
+      console.log('User accepted transaction for signing: begin sign');
+      console.log(result);
     } else {
       if (result.statusCode === 27014) {
         console.log('User rejected transaction');
@@ -188,7 +205,18 @@ async function createMsgTx(source_addr, fee, message) {
   var result = qrl.createMessageTx(source_addr, fee, message);
   if (result) {
     console.log('Success creating message Tx: ', result);
-    signSend(result);
+    retrieveSignature(result);
+  } else {
+    console.log('Error creating message Tx');
+  };
+}
+
+async function createTx(source_addr, fee, dest_addresses, dest_amounts) {
+  var qrl = await createTransport();
+  var result = qrl.createTx(source_addr, fee, dest_addresses, dest_amounts);
+  if (result) {
+    console.log('Success creating message Tx: ', result);
+    retrieveSignature(result);
   } else {
     console.log('Error creating message Tx');
   };
@@ -215,10 +243,13 @@ $(document).ready(function() {
     setOTS(100);
   });
   $('.signSend').click(function() {
-    var basic_tx = Buffer.alloc(96);
-    basic_tx[0] = 0; // QRLTX_TX;
-    basic_tx[1] = 1;
-    signSend(basic_tx);
+    var source_addr = Buffer.from('000400536b8996ccf07999f29b65edd41ed5603b3cd20430b46eefa10ca3e26266792675e8e412', 'hex');
+    var fee = toBigendianUint64BytesUnsigned(10, true);
+    var dest_addresses = [];
+    dest_addresses.push(source_addr);
+    var dest_amounts = []
+    dest_amounts.push(toBigendianUint64BytesUnsigned(10, true));
+    createTx(source_addr, fee, dest_addresses, dest_amounts);
   });
   $('.createMsgTx').click(function() {
     var source_addr = Buffer.from('000400536b8996ccf07999f29b65edd41ed5603b3cd20430b46eefa10ca3e26266792675e8e412', 'hex');

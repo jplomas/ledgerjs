@@ -51,7 +51,7 @@ const INS_TEST_SETSTATE = 0x87;
 const INS_TEST_COMM = 0x88;
 
 // APDU ERRORS
-const APDU_ERROR_CODE_OK = 0x9000;
+const APDU_ERROR_CODE_OK = "9000";
 
 const QRLTX_TX = 0;
 const QRLTX_TXTOKEN = 1;
@@ -68,30 +68,6 @@ const P_TX_SRC_ADDR = 2;
 const P_TX_SRC_FEE = 41;
 const P_TX_DEST = 49;
 
-function serialize(CLA, INS, p1 = 0, p2 = 0, data = null) {
-    var size = 5;
-    if (data != null) {
-        if (data.length > 255) {
-            throw new Error('maximum data size = 255');
-        }
-        size += data.length
-    }
-
-    var buffer = Buffer.alloc(size);
-    buffer[0] = CLA;
-    buffer[1] = INS;
-    buffer[2] = p1;
-    buffer[3] = p2;
-    buffer[4] = 0;
-
-    if (data != null) {
-        buffer[4] = data.length;
-        buffer.set(data, 5);
-    }
-
-    return buffer;
-}
-
 function concatenateTypedArrays (resultConstructor, ...arrays) {
     let totalLength = 0;
     for (let arr of arrays) {
@@ -104,6 +80,10 @@ function concatenateTypedArrays (resultConstructor, ...arrays) {
       offset += arr.length;
     }
     return result;
+}
+
+function buf2hex(buffer) { // buffer is an ArrayBuffer
+  return Array.prototype.map.call(new Uint8Array(buffer), x => ("00" + x.toString(16)).slice(-2)).join("");
 }
 
 function errorHandling(response) {
@@ -156,7 +136,6 @@ export default class Qrl {
       CLA, INS_GETSTATE, 0, 0
         ).then(
           apduResponse => {
-            // console.log(apduResponse);
             var result = {};
             result["state"] = apduResponse[0]; // 0 - Not ready, 1 - generating keys, 2 = ready
             result["xmss_index"] = apduResponse[2] + apduResponse[1] * 256;
@@ -215,11 +194,11 @@ export default class Qrl {
     );
   }
 
-  signSend(message: string): Promise<{
+  signSend(message): Promise<{
     result: object
   }> {
     return this.transport.send(
-      CLA, INS_SIGN, 0, 0, Buffer.from(message)).then(
+      CLA, INS_SIGN, 0, 0, message).then(
       apduResponse => {
         return apduResponse;
       },
@@ -309,6 +288,67 @@ export default class Qrl {
       message.copy(tx, 49);
 
       return tx;
+  };
+
+  retrieveSignature(transaction): Promise<{
+    result: object
+  }> {
+      let myqrl = this;
+      return myqrl.signSend(transaction).then(async function (resultSign) {
+          if (resultSign.name === "TransportStatusError") {
+            // maintain backwards compatibility with error reporting
+            resultSign.return_code = 27014;
+            return resultSign;
+          }
+          let response = {};
+          const apduResponse = Buffer.from(resultSign, "hex");
+          response["return_code"] = apduResponse;
+          response["error_message"] = resultSign.error_message; // FIXME
+          response["signature"] = null;
+
+          if (buf2hex(response.return_code) === APDU_ERROR_CODE_OK) {
+              let signature = new Uint8Array();
+              let result = {};
+              for (let i = 0; i < 11; i++) {
+                  result = await myqrl.signNext();
+                  if (buf2hex(result.return_code) !== APDU_ERROR_CODE_OK) {
+                      response["return_code"] = result.return_code;
+                      response["error_message"] = result.error_message;
+                      break;
+                  }
+
+                  signature = concatenateTypedArrays(
+                      Uint8Array,
+                          signature,
+                          result.signature_chunk
+                  );
+                  response = result;
+              }
+              response["return_code"] = result.return_code;
+              response["error_message"] = result.error_message;
+              response["signature"] = signature;
+          }
+          delete response["signature_chunk"];
+          return response;
+      });
+  };
+
+  signNext(): Promise<{
+    result: object
+  }> {
+      return this.transport.send(
+        CLA, INS_SIGN_NEXT).then(
+        apduResponse => {
+          const apduR = Buffer.from(apduResponse, "hex");
+          let error_code_data = apduR.slice(-2);
+          let result = {};
+          result["signature_chunk"] = apduR.slice(0, apduR.length - 2);
+          result["return_code"] = error_code_data;
+          result["error_message"] = 0x00; // FIXME
+          return result;
+        },
+        response => errorHandling(response)
+      );
   };
 
 }
