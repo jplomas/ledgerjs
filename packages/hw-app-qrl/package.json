@@ -1,24 +1,24 @@
 {
   "name": "@ledgerhq/hw-app-qrl",
   "version": "4.60.3",
-  "description": "Ledger Hardware Wallet Stellar Application API",
+  "description": "Ledger Hardware Wallet Quantum Resistant Ledger Application API",
   "keywords": [
     "Ledger",
     "LedgerWallet",
-    "Stellar",
-    "xlm",
+    "Quantum Resistant Ledger",
+    "qrl",
     "NanoS",
-    "Blue",
+    "NanoX",
     "Hardware Wallet"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/LedgerHQ/ledgerjs"
+    "url": "https://github.com/theqrl/qrl-ledger-js"
   },
   "bugs": {
-    "url": "https://github.com/LedgerHQ/ledgerjs/issues"
+    "url": "https://github.com/theqrl/qrl-ledger-js/issues"
   },
-  "homepage": "https://github.com/LedgerHQ/ledgerjs",
+  "homepage": "https://github.com/theqrl/qrl-ledger-js",
   "publishConfig": {
     "access": "public"
   },
@@ -26,9 +26,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@ledgerhq/hw-transport": "^4.60.3",
-    "base32.js": "^0.1.0",
-    "sha.js": "^2.3.6",
-    "tweetnacl": "^1.0.0"
+    "sha.js": "^2.3.6"
   },
   "devDependencies": {
     "flow-bin": "^0.98.1"
@@ -36,7 +34,7 @@
   "scripts": {
     "flow": "flow",
     "clean": "bash ../../script/clean.sh",
-    "build": "bash ../../script/build.sh",
-    "watch": "bash ../../script/watch.sh"
+    "build": "bash ../../script/build.sh && browserify ./src/qrl-web.js -o ./lib/bundle.js -t [ babelify ]",
+    "watch": "bash ../../script/watch.sh && browserify ./src/qrl-web.js -o ./lib/bundle.js -t [ babelify ]"
   }
 }
