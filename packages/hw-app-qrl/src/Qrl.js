@@ -112,7 +112,7 @@ export default class Qrl {
       ["get_version", "get_state", "publickey",
       "viewAddress", "setIdx", "signSend", "signNext",
       "retrieveSignature", "createTx", "createMessageTx"],
-      scrambleKey, transport
+      scrambleKey
     );
   }
 
@@ -197,15 +197,19 @@ export default class Qrl {
     );
   }
 
-  signSend(message): Promise<{
+  async signSend(message): Promise<{
     result: object
   }> {
+    console.log('SIGNSENDS THIS:');
+    console.log(this);
     return this.transport.send(
       CLA, INS_SIGN, 0, 0, message).then(
       apduResponse => {
         return apduResponse;
       },
-      response => errorHandling(response)
+      response => {
+        return errorHandling(response);
+      }
     );
   };
 
@@ -297,12 +301,14 @@ export default class Qrl {
     result: object
   }> {
       let myqrl = this;
-      return myqrl.signSend(transaction).then(async function (resultSign) {
-          if (resultSign.name === "TransportStatusError") {
-            // maintain backwards compatibility with error reporting
-            resultSign.return_code = 27014;
-            return resultSign;
-          }
+     console.log('MYQRL:');
+     console.log(myqrl);
+      return this.signSend(transaction).then(async function (resultSign) {
+          // if (resultSign.name === "TransportStatusError") {
+          //   // maintain backwards compatibility with error reporting
+          //   resultSign.return_code = 27014;
+          //   return resultSign;
+          // }
           console.log('resultSign', resultSign);
           let response = {};
           const apduResponse = Buffer.from(resultSign, "hex");
@@ -336,9 +342,10 @@ export default class Qrl {
           delete response["signature_chunk"];
           return response;
       });
+ 
   };
 
-  signNext(): Promise<{
+  async signNext(): Promise<{
     result: object
   }> {
       return this.transport.send(

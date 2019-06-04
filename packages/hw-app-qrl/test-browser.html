@@ -4,7 +4,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 </head>
 <body>
-  <h1>QRL <-> LedgerJS interface diagnostics</h1>
+  <h1>QRL <-> LedgerJS interface diagnostics - ARGH</h1>
   <h4>Ensure Ledger plugged in, unlocked and QRL app open</h4>
   <p><button class="getVersion">Get Version</button></p>
   <p><button class="getState">Get State</button></p>
@@ -14,6 +14,7 @@
   <p><button class="OTS100">Set OTS 100</button></p>
   <p><button class="signSend">Create basic Tx & SignSend</button></p>
   <p><button class="createMsgTx">Create message Tx & SignSend</button></p>
+  <p><button class="unlock">TEST: unlock</button></p>
 <script>
 /* eslint-disable */
 
@@ -93,10 +94,10 @@ async function createTransport() {
   var transport = null;
   var webusbAvail = await checkWebUSB();
   if (webusbAvail) {
-    transport = await transports[1].clazz.create();
+    transport = await transports[1].clazz.create('qrl');
     console.log('USING WEBUSB');
   } else {
-    transport = await transports[0].clazz.create();
+    transport = await transports[0].clazz.create('qrl');
     console.log('USING U2F');
   }
   var qrl = await new Qrl(transport);
@@ -172,7 +173,7 @@ async function setOTS(idx) {
 
 async function retrieveSignature(message) {
   var qrl = await createTransport();
-  await qrl.retrieveSignature(message, qrl).then(function(result) {
+  await qrl.retrieveSignature(message).then(function(result) {
     if (!ledgerReturnedError(result)) {
       console.log(result);
       console.log('Success: signed');
@@ -189,7 +190,7 @@ async function retrieveSignature(message) {
 
 async function signSend(message) {
   var qrl = await createTransport();
-  await qrl.retrieveSignature(message).then(function(result) {
+  await qrl.signSend(message).then(function(result) {
     if (!ledgerReturnedError(result)) {
       console.log('User accepted transaction for signing: begin sign');
       console.log(result);
@@ -206,28 +207,49 @@ async function signSend(message) {
 
 async function createMsgTx(source_addr, fee, message) {
   var qrl = await createTransport();
-  var result = qrl.createMessageTx(source_addr, fee, message);
-  if (result) {
-    console.log('Success creating message Tx: ', result);
-    retrieveSignature(result);
+  return await qrl.createMessageTx(source_addr, fee, message).then(async function (res) {
+
+
+  if (res) {
+    console.log('Success creating message Tx: ', res);
+    await qrl.retrieveSignature(res).then(function(result) {
+      if (!ledgerReturnedError(result)) {
+        console.log(result);
+        console.log('Success: signed');
+      } else {
+        console.log('Fail: ', result);
+        if (result.statusCode === 27014) {
+          console.log('The user rejected the transaction on the Ledger');
+        }
+      }
+    }).catch(function(e) {
+      console.log('Error during signing on Ledger', e);
+    }); 
   } else {
     console.log('Error creating message Tx');
   };
+  });
 }
 
 async function createTx(source_addr, fee, dest_addresses, dest_amounts) {
   var qrl = await createTransport();
-  var result = qrl.createTx(source_addr, fee, dest_addresses, dest_amounts);
+  var result = await qrl.createTx(source_addr, fee, dest_addresses, dest_amounts);
   if (result) {
-    console.log('Success creating message Tx: ', result);
-    retrieveSignature(result);
+    console.log('Success creating Tx: ', result);
+    signSend(result);
   } else {
-    console.log('Error creating message Tx');
+    console.log('Error creating Tx');
   };
 }
 
 $(document).ready(function() {
   checkSupported();
+    $('.unlock').click(function() {
+      var basic_tx = Buffer.alloc(96);
+      basic_tx[0] = 0; // QRLTX_TX;
+      basic_tx[1] = 1;
+      signSend(basic_tx);
+  });
   $('.getVersion').click(function() {
     getVersion();
   });

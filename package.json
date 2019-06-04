@@ -21,7 +21,7 @@
     "watch": "lerna run --parallel watch",
     "clean": "rm -rf node_modules packages/*/node_modules/ packages/*/flow-typed/ packages/*/lib flow-typed",
     "rebuild": "lerna run clean && lerna run build",
-    "qrl-build-browser": "browserify packages/hw-app-qrl/src/qrl-web.js -o packages/hw-qrl-app/lib/bundle.js -t [ babelify ]",
+    "qrl-build-browser": "browserify packages/hw-app-qrl/src/qrl-web.js -o packages/hw-app-qrl/lib/bundle.js -t [ babelify ]",
     "publish": "yarn && lerna run clean && lerna run build && lerna publish --registry=https://registry.npmjs.org/"
   },
   "devDependencies": {
