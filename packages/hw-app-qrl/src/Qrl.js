@@ -109,8 +109,10 @@ export default class Qrl {
     this.transport = transport;
     transport.decorateAppAPIMethods(
       this,
-      ["get_version", "get_state", "publickey", "viewAddress", "setIdx"],
-      scrambleKey
+      ["get_version", "get_state", "publickey",
+      "viewAddress", "setIdx", "retrieveSignature",
+      "signNext", "signSend"],
+      scrambleKey, transport
     );
   }
 

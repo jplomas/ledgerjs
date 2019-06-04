@@ -78,6 +78,7 @@ async function checkU2F() {
 }
 
 async function checkWebUSB() {
+  // return false;
   return (!navigator.platform.toLowerCase().includes('win') && (await transports[1].clazz.isSupported()))
 }
 
@@ -90,10 +91,13 @@ async function checkSupported() {
 
 async function createTransport() {
   var transport = null;
-  if (checkWebUSB()) {
+  var webusbAvail = await checkWebUSB();
+  if (webusbAvail) {
     transport = await transports[1].clazz.create();
+    console.log('USING WEBUSB');
   } else {
     transport = await transports[0].clazz.create();
+    console.log('USING U2F');
   }
   var qrl = await new Qrl(transport);
   return qrl
@@ -168,7 +172,7 @@ async function setOTS(idx) {
 
 async function retrieveSignature(message) {
   var qrl = await createTransport();
-  await qrl.retrieveSignature(message).then(function(result) {
+  await qrl.retrieveSignature(message, qrl).then(function(result) {
     if (!ledgerReturnedError(result)) {
       console.log(result);
       console.log('Success: signed');
