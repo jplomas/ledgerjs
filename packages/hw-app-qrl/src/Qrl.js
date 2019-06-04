@@ -110,8 +110,8 @@ export default class Qrl {
     transport.decorateAppAPIMethods(
       this,
       ["get_version", "get_state", "publickey",
-      "viewAddress", "setIdx", "retrieveSignature",
-      "signNext", "signSend"],
+      "viewAddress", "setIdx", "signSend", "signNext",
+      "retrieveSignature", "createTx", "createMessageTx"],
       scrambleKey, transport
     );
   }
@@ -293,7 +293,7 @@ export default class Qrl {
       return tx;
   };
 
-  retrieveSignature(transaction): Promise<{
+  async retrieveSignature(transaction): Promise<{
     result: object
   }> {
       let myqrl = this;
@@ -303,6 +303,7 @@ export default class Qrl {
             resultSign.return_code = 27014;
             return resultSign;
           }
+          console.log('resultSign', resultSign);
           let response = {};
           const apduResponse = Buffer.from(resultSign, "hex");
           response["return_code"] = apduResponse;
@@ -310,6 +311,7 @@ export default class Qrl {
           response["signature"] = null;
 
           if (buf2hex(response.return_code) === APDU_ERROR_CODE_OK) {
+            console.log('ok return code');
               let signature = new Uint8Array();
               let result = {};
               for (let i = 0; i < 11; i++) {
