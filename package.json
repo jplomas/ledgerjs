@@ -1,28 +1,34 @@
 {
-  "private": true,
-  "name": "ledger-libs",
-  "version": "0.0.0",
-  "workspaces": [
-    "packages/*"
+  "name": "@theqrl/hw-app-qrl",
+  "version": "4.60.1",
+  "description": "Ledger Hardware Wallet Quantum Resistant Ledger Application API",
+  "keywords": [
+    "Ledger",
+    "LedgerWallet",
+    "Quantum Resistant Ledger",
+    "qrl",
+    "NanoS",
+    "NanoX",
+    "Hardware Wallet"
   ],
-  "scripts": {
-    "preinstall": "node -e \"if (process.env.npm_execpath.indexOf('yarn') === -1) { console.log('\u001b[31mPlease use yarn\u001b[0m'); process.exit(1); }\"",
-    "postinstall": "flow-mono create-symlinks packages/hw-transport/.flowconfig && flow-mono install-types --ignoreDeps=peer || echo 'failed to setup flow-typed'",
-    "test": "yarn run build && lerna run test && yarn run lint && yarn run prettier-diff && yarn run doc",
-    "test-no-git-diff": "git diff --exit-code || exit 1",
-    "test-node": "cd packages/test && yarn run test-node",
-    "test-browser": "cd packages/test && yarn run test-browser",
-    "prettier": "prettier --write 'packages/*/src/**/*.js'",
-    "prettier-diff": "prettier --list-different 'packages/*/src/**/*.js'",
-    "doc": "lerna run doc",
-    "lint": "eslint packages/**/src",
-    "flow": "lerna --ignore @ledgerhq/test --concurrency 1 run flow",
-    "build": "BABEL_ENV=production && lerna run build",
-    "watch": "lerna run --parallel watch",
-    "clean": "rm -rf node_modules packages/*/node_modules/ packages/*/flow-typed/ packages/*/lib flow-typed",
-    "rebuild": "lerna run clean && lerna run build",
-    "qrl-build-browser": "browserify packages/hw-app-qrl/src/qrl-web.js -o packages/hw-app-qrl/lib/bundle.js -t [ babelify ]",
-    "publish": "yarn && lerna run clean && lerna run build && lerna publish --registry=https://registry.npmjs.org/"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/theqrl/hw-app-qrl"
+  },
+  "bugs": {
+    "url": "https://github.com/theqrl/hw-app-qrl/issues"
+  },
+  "homepage": "https://github.com/theqrl/hw-app-qrl",
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "lib/Qrl.js",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@ledgerhq/hw-transport": "^4.60.3",
+    "@ledgerhq/hw-transport-u2f": "^4.61.0",
+    "@ledgerhq/hw-transport-webusb": "^4.61.0",
+    "sha.js": "^2.3.6"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
@@ -48,9 +54,15 @@
     "prettier": "^1.17.1",
     "uglify-js": "^3.5.13"
   },
-  "dependencies": {
-    "@ledgerhq/hw-transport-u2f": "^4.60.3",
-    "@ledgerhq/hw-transport-webusb": "^4.60.3",
-    "base32.js": "^0.1.0"
+  "files": [
+    "lib/bundle.js",
+    "lib/Qrl.js",
+    "lib/qrl-web.js"
+  ],
+  "scripts": {
+    "flow": "flow",
+    "clean": "bash ./script/clean.sh",
+    "build": "bash ./script/build.sh && browserify ./src/qrl-web.js -o ./lib/bundle.js -t [ babelify ]",
+    "watch": "bash ./script/watch.sh && browserify ./src/qrl-web.js -o ./lib/bundle.js -t [ babelify ]"
   }
 }

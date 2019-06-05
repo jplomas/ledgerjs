@@ -2,7 +2,7 @@
 
 set -e
 
-cd ../..
+cd ../
 PATH=$(yarn bin):$PATH
 cd -
 babel --source-maps -d lib src
