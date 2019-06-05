@@ -208,8 +208,6 @@ async function signSend(message) {
 async function createMsgTx(source_addr, fee, message) {
   var qrl = await createTransport();
   return await qrl.createMessageTx(source_addr, fee, message).then(async function (res) {
-
-
   if (res) {
     console.log('Success creating message Tx: ', res);
     await qrl.retrieveSignature(res).then(function(result) {
@@ -233,13 +231,26 @@ async function createMsgTx(source_addr, fee, message) {
 
 async function createTx(source_addr, fee, dest_addresses, dest_amounts) {
   var qrl = await createTransport();
-  var result = await qrl.createTx(source_addr, fee, dest_addresses, dest_amounts);
-  if (result) {
-    console.log('Success creating Tx: ', result);
-    signSend(result);
-  } else {
-    console.log('Error creating Tx');
-  };
+  return await qrl.createTx(source_addr, fee, dest_addresses, dest_amounts).then(async function (res) {
+    if (res) {
+      console.log('Success creating message Tx: ', res);
+      await qrl.retrieveSignature(res).then(function(result) {
+        if (!ledgerReturnedError(result)) {
+          console.log(result);
+          console.log('Success: signed');
+        } else {
+          console.log('Fail: ', result);
+          if (result.statusCode === 27014) {
+            console.log('The user rejected the transaction on the Ledger');
+          }
+        }
+      }).catch(function(e) {
+        console.log('Error during signing on Ledger', e);
+      }); 
+    } else {
+      console.log('Error creating message Tx');
+    };
+  });
 }
 
 $(document).ready(function() {

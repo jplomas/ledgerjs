@@ -300,15 +300,17 @@ export default class Qrl {
   async retrieveSignature(transaction): Promise<{
     result: object
   }> {
+      this.transport._appAPIlock = false;
       let myqrl = this;
      console.log('MYQRL:');
      console.log(myqrl);
       return this.signSend(transaction).then(async function (resultSign) {
-          // if (resultSign.name === "TransportStatusError") {
-          //   // maintain backwards compatibility with error reporting
-          //   resultSign.return_code = 27014;
-          //   return resultSign;
-          // }
+          // rejected by user
+          if (resultSign.name === "TransportStatusError") {
+            // maintain backwards compatibility with error reporting
+            resultSign.return_code = 27014;
+            return resultSign;
+          }
           console.log('resultSign', resultSign);
           let response = {};
           const apduResponse = Buffer.from(resultSign, "hex");
