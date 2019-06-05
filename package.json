@@ -1,6 +1,6 @@
 {
   "name": "@theqrl/hw-app-qrl",
-  "version": "4.60.1",
+  "version": "4.60.2",
   "description": "Ledger Hardware Wallet Quantum Resistant Ledger Application API",
   "keywords": [
     "Ledger",
