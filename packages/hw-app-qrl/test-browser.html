@@ -4,7 +4,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 </head>
 <body>
-  <h1>QRL <-> LedgerJS interface diagnostics - ARGH</h1>
+  <h1>QRL <-> LedgerJS interface diagnostics - WebUSB only</h1>
   <h4>Ensure Ledger plugged in, unlocked and QRL app open</h4>
   <p><button class="getVersion">Get Version</button></p>
   <p><button class="getState">Get State</button></p>
@@ -97,8 +97,7 @@ async function createTransport() {
     transport = await transports[1].clazz.create('qrl');
     console.log('USING WEBUSB');
   } else {
-    transport = await transports[0].clazz.create('qrl');
-    console.log('USING U2F');
+    throw new Error('Only U2F is supported by your browser')
   }
   var qrl = await new Qrl(transport);
   return qrl

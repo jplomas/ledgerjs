@@ -200,8 +200,6 @@ export default class Qrl {
   async signSend(message): Promise<{
     result: object
   }> {
-    console.log('SIGNSENDS THIS:');
-    console.log(this);
     return this.transport.send(
       CLA, INS_SIGN, 0, 0, message).then(
       apduResponse => {
@@ -302,8 +300,6 @@ export default class Qrl {
   }> {
       this.transport._appAPIlock = false;
       let myqrl = this;
-     console.log('MYQRL:');
-     console.log(myqrl);
       return this.signSend(transaction).then(async function (resultSign) {
           // rejected by user
           if (resultSign.name === "TransportStatusError") {
@@ -311,15 +307,13 @@ export default class Qrl {
             resultSign.return_code = 27014;
             return resultSign;
           }
-          console.log('resultSign', resultSign);
           let response = {};
           const apduResponse = Buffer.from(resultSign, "hex");
           response["return_code"] = apduResponse;
-          response["error_message"] = resultSign.error_message; // FIXME
+          response["error_message"] = resultSign.error_message;
           response["signature"] = null;
 
           if (buf2hex(response.return_code) === APDU_ERROR_CODE_OK) {
-            console.log('ok return code');
               let signature = new Uint8Array();
               let result = {};
               for (let i = 0; i < 11; i++) {
@@ -358,7 +352,7 @@ export default class Qrl {
           let result = {};
           result["signature_chunk"] = apduR.slice(0, apduR.length - 2);
           result["return_code"] = error_code_data;
-          result["error_message"] = 0x00; // FIXME
+          result["error_message"] = 0x77;
           return result;
         },
         response => errorHandling(response)
