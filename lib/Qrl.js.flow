@@ -17,6 +17,7 @@
  ********************************************************************************/
 //@flow
 
+import helpers from '@theqrl/wallet-helpers';
 import type Transport from "@ledgerhq/hw-transport";
 // import {
 //   splitPath,
@@ -87,6 +88,14 @@ function buf2hex(buffer) { // buffer is an ArrayBuffer
   return Array.prototype.map.call(new Uint8Array(buffer), x => ("00" + x.toString(16)).slice(-2)).join("");
 }
 
+function bytesToHex(bytes) {
+  for (var hex = [], i = 0; i < bytes.length; i++) {
+    hex.push((bytes[i] >>> 4).toString(16));
+    hex.push((bytes[i] & 0xf).toString(16));
+  }
+  return hex.join("");
+}
+
 function errorHandling(response) {
   let e = response;
   // backwards compatibility
@@ -111,7 +120,8 @@ export default class Qrl {
       this,
       ["get_version", "get_state", "publickey",
       "viewAddress", "setIdx", "signSend", "signNext",
-      "retrieveSignature", "createTx", "createMessageTx"],
+      "retrieveSignature", "createTx", "createMessageTx",
+      "getAddress"],
       scrambleKey
     );
   }
@@ -358,5 +368,37 @@ export default class Qrl {
         response => errorHandling(response)
       );
   };
+
+  getAddress(): Promise<{
+    result: object
+  }> {
+    return this.transport.send(
+      CLA, INS_PUBLIC_KEY).then(
+          apduResponse => {
+              var result = {};
+              var epk = apduResponse.slice(0, apduResponse.length - 2);
+              result["publicKey"] = bytesToHex(epk);
+              result["address"] = helpers.QRLAddressFromEPKHex(bytesToHex(epk));
+              result["chainCode"] = undefined;
+              return result;
+          },
+          response => errorHandling(response)
+          );
+  }
+
+  // getAddress(path, verify, askChainCode): Promise<{
+  //   result: object
+  // }> {
+  //   return this.transport.send(
+  //     CLA, INS_PUBLIC_KEY).then(
+  //         apduResponse => {
+  //             var result = {};
+  //             var epk = apduResponse.slice(0, apduResponse.length - 2);
+  //             result.address = helpers.QRLAddressFromEPKHex(epk);
+  //             return result;
+  //         },
+  //         response => errorHandling(response)
+  //         );
+  // };
 
 }

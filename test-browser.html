@@ -9,6 +9,7 @@
   <p><button class="getVersion">Get Version</button></p>
   <p><button class="getState">Get State</button></p>
   <p><button class="getPublicKey">Get Public Key</button></p>
+  <p><button class="getAddress">Get Address</button></p>
   <p><button class="viewAddress">View Address on Device</button></p>
   <p><button class="OTS0">Set OTS 0</button></p>
   <p><button class="OTS100">Set OTS 100</button></p>
@@ -144,6 +145,21 @@ async function getPublicKey() {
   }); 
 }
 
+async function getAddress() {
+  var qrl = await createTransport();
+  await qrl.getAddress().then(function(result) {
+    if (!ledgerReturnedError(result)) {
+      console.log('Success: ', result);
+      // const pkHex = Buffer.from(result.public_key).toString('hex');
+      // console.log('Hex version: ', pkHex);
+    } else {
+      console.log('Fail: ', result);
+    }
+  }).catch(function(e) {
+    console.log('Error getting public key: ', e);
+  }); 
+}
+
 async function viewAddress() {
   var qrl = await createTransport();
   await qrl.viewAddress().then(function(result) {
@@ -271,6 +287,9 @@ $(document).ready(function() {
   });
   $('.viewAddress').click(function() {
     viewAddress();
+  });
+  $('.getAddress').click(function() {
+    getAddress();
   });
   $('.OTS0').click(function() {
     setOTS(0);
