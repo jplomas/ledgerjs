@@ -1,6 +1,6 @@
 {
   "name": "@theqrl/hw-app-qrl",
-  "version": "4.60.2",
+  "version": "5.0.0",
   "description": "Ledger Hardware Wallet Quantum Resistant Ledger Application API",
   "keywords": [
     "Ledger",
@@ -28,6 +28,7 @@
     "@ledgerhq/hw-transport": "^4.60.3",
     "@ledgerhq/hw-transport-u2f": "^4.61.0",
     "@ledgerhq/hw-transport-webusb": "^4.61.0",
+    "@theqrl/wallet-helpers": "^1.0.0",
     "sha.js": "^2.3.6"
   },
   "devDependencies": {
