@@ -10,6 +10,7 @@
   <p><button class="getState">Get State</button></p>
   <p><button class="getPublicKey">Get Public Key</button></p>
   <p><button class="getAddress">Get Address</button></p>
+  <p><button class="getAddressV">Get Address & verify</button></p>
   <p><button class="viewAddress">View Address on Device</button></p>
   <p><button class="OTS0">Set OTS 0</button></p>
   <p><button class="OTS100">Set OTS 100</button></p>
@@ -75,31 +76,32 @@ async function getUSBDevices() {
   return d
 }
 
-async function checkU2F() {
+async function checkWebhid() {
   return transports[0].clazz.isSupported()
 }
 
 async function checkWebUSB() {
   // return false;
+  console.log(transports)
   return (!navigator.platform.toLowerCase().includes('win') && (await transports[1].clazz.isSupported()))
 }
 
 async function checkSupported() {
-  var u2f = await checkU2F();
+  var webhid = await checkWebhid();
   var webusb = await checkWebUSB();
-  console.log('u2f support: ' + u2f);
+  console.log('webhid support: ' + webhid);
   console.log('webusb support: ' + webusb);
 }
 
 async function createTransport() {
   var transport = null;
-  var webusbAvail = await checkWebUSB();
-  if (webusbAvail) {
-    transport = await transports[1].clazz.create('qrl');
-    console.log('USING WEBUSB');
-  } else {
-    throw new Error('Only U2F is supported by your browser')
-  }
+  // var webusbAvail = await checkWebUSB();
+  // if (webusbAvail) {
+    transport = await transports[0].clazz.create('qrl');
+  //   console.log('USING WEBUSB');
+  // } else {
+  //   throw new Error('Only webhid is supported by your browser')
+  // }
   var qrl = await new Qrl(transport);
   return qrl
 }
@@ -145,9 +147,9 @@ async function getPublicKey() {
   }); 
 }
 
-async function getAddress() {
+async function getAddress(verify) {
   var qrl = await createTransport();
-  await qrl.getAddress().then(function(result) {
+  await qrl.getAddress(verify).then(function(result) {
     if (!ledgerReturnedError(result)) {
       console.log('Success: ', result);
       // const pkHex = Buffer.from(result.public_key).toString('hex');
@@ -290,6 +292,9 @@ $(document).ready(function() {
   });
   $('.getAddress').click(function() {
     getAddress();
+  });
+  $('.getAddressV').click(function() {
+    getAddress(true);
   });
   $('.OTS0').click(function() {
     setOTS(0);

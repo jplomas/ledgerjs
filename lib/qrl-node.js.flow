@@ -1,6 +1,6 @@
 /********************************************************************************
  *   QRL Browserify Generation
- *   (c) 2019 The QRL Foundation
+ *   (c) 2020 The QRL Foundation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,23 +15,21 @@
  *  limitations under the License.
  ********************************************************************************/
 
-import "core-js/stable";
-import "regenerator-runtime/runtime";
+// import "babel-polyfill";
 
-import TransportWebHID from "@ledgerhq/hw-transport-webhid";
-import TransportWebUSB from "@ledgerhq/hw-transport-webusb";
+// import TransportNodeHid from "@ledgerhq/hw-transport-node-hid";
 import Qrl from "./Qrl";
 
-window.Buffer = require("buffer").Buffer;
+// window.Buffer = require("buffer").Buffer;
 
-const transports = [
-  { name: "Webhid transport", clazz: TransportWebHID },
-  { name: "WebUSB transport", clazz: TransportWebUSB },
-];
+// export const transports = [
+//   { name: "Nodehid transport", clazz: TransportNodeHid },
+// ];
 
-window.TransportWebUSB = TransportWebUSB;
-window.TransportWebHID = TransportWebHID;
+const QrlLedgerModule = Qrl;
 
-window.Qrl = Qrl;
+module.exports = {
+  QrlLedgerModule
+};
 
-window.transports = transports;
+// export const QrlTransports = transports;

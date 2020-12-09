@@ -15,20 +15,22 @@
  *  limitations under the License.
  ********************************************************************************/
 
-import "babel-polyfill";
+import "core-js/stable";
+import "regenerator-runtime/runtime";
 
-import TransportU2F from "@ledgerhq/hw-transport-u2f";
+import TransportWebHID from "@ledgerhq/hw-transport-webhid";
 import TransportWebUSB from "@ledgerhq/hw-transport-webusb";
 import Qrl from "./Qrl";
 
 window.Buffer = require("buffer").Buffer;
 
 const transports = [
-  { name: "U2F transport", clazz: TransportU2F },
+  { name: "Webhid transport", clazz: TransportWebHID },
   { name: "WebUSB transport", clazz: TransportWebUSB },
 ];
 
 window.TransportWebUSB = TransportWebUSB;
+window.TransportWebHID = TransportWebHID;
 
 window.Qrl = Qrl;
 
