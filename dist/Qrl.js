@@ -17,10 +17,6 @@ var _createClass2 = _interopRequireDefault(require("@babel/runtime/helpers/creat
 
 var _walletHelpers = _interopRequireDefault(require("@theqrl/wallet-helpers"));
 
-require("core-js/stable");
-
-require("regenerator-runtime/runtime");
-
 /********************************************************************************
  *   Ledger Node JS API
  *   (c) 2017-2018 Ledger
@@ -38,7 +34,8 @@ require("regenerator-runtime/runtime");
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  ********************************************************************************/
-//
+//     
+// import Transport from "@ledgerhq/hw-transport";
 // import {
 //   splitPath,
 //   foreach,
@@ -466,18 +463,37 @@ var Qrl = /*#__PURE__*/function () {
     }()
   }, {
     key: "getAddress",
-    value: function getAddress() {
-      return this.transport.send(CLA, INS_PUBLIC_KEY).then(function (apduResponse) {
-        var result = {};
-        var epk = apduResponse.slice(0, apduResponse.length - 2);
-        result["publicKey"] = bytesToHex(epk);
-        result["address"] = _walletHelpers["default"].QRLAddressFromEPKHex(bytesToHex(epk));
-        result["chainCode"] = undefined;
-        return result;
-      }, function (response) {
-        return errorHandling(response);
-      });
-    } // getAddress(path, verify, askChainCode): Promise<{
+    value: function () {
+      var _getAddress = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee5(verify) {
+        return _regenerator["default"].wrap(function _callee5$(_context5) {
+          while (1) {
+            switch (_context5.prev = _context5.next) {
+              case 0:
+                return _context5.abrupt("return", this.transport.send(CLA, INS_PUBLIC_KEY).then(function (apduResponse) {
+                  var result = {};
+                  var epk = apduResponse.slice(0, apduResponse.length - 2);
+                  result["publicKey"] = bytesToHex(epk);
+                  result["address"] = _walletHelpers["default"].QRLAddressFromEPKHex(bytesToHex(epk));
+                  result["chainCode"] = undefined;
+                  return result;
+                }, function (response) {
+                  return errorHandling(response);
+                }));
+
+              case 1:
+              case "end":
+                return _context5.stop();
+            }
+          }
+        }, _callee5, this);
+      }));
+
+      function getAddress(_x4) {
+        return _getAddress.apply(this, arguments);
+      }
+
+      return getAddress;
+    }() // getAddress(path, verify, askChainCode): Promise<{
     //   result: object
     // }> {
     //   return this.transport.send(
@@ -497,4 +513,11 @@ var Qrl = /*#__PURE__*/function () {
 }();
 
 exports["default"] = Qrl;
-//# sourceMappingURL=Qrl.js.map
+
+function newQrlApp(transport) {
+  return new Qrl(transport);
+}
+
+module.exports = {
+  newQrlApp: newQrlApp
+};

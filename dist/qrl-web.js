@@ -2,9 +2,7 @@
 
 var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
 
-require("core-js/stable");
-
-require("regenerator-runtime/runtime");
+require("babel-polyfill");
 
 var _hwTransportWebhid = _interopRequireDefault(require("@ledgerhq/hw-transport-webhid"));
 
@@ -40,4 +38,3 @@ window.TransportWebUSB = _hwTransportWebusb["default"];
 window.TransportWebHID = _hwTransportWebhid["default"];
 window.Qrl = _Qrl["default"];
 window.transports = transports;
-//# sourceMappingURL=qrl-web.js.map

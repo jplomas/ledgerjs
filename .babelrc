@@ -1,17 +1,13 @@
 {
   "presets": [
+    "@babel/preset-env"
+  ],
+  "plugins": [
     [
-      "env",
+      "@babel/plugin-transform-runtime",
       {
-        "targets": {
-          "browsers": ["last 2 versions"],
-          "node": 8
-        },
-        "forceAllTransforms": true
+        "regenerator": true
       }
-    ],
-    "flow",
-    "react",
-    "stage-0"
+    ]
   ]
 }
